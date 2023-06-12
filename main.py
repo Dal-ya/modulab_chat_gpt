@@ -1,7 +1,9 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, UploadFile
 import uvicorn
+import subprocess
 from dto import PaintDTO, CreatePaintDTO
 from openai_func import translate_description, generate_image
+
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
@@ -37,6 +39,21 @@ async def create_paint(paint: CreatePaintDTO) -> PaintDTO:
             "message": translate_description_result.message,
             "data": {}
         })
+
+
+@router.get('/cmd')
+async def cmd():
+    cmd_msg = "ls -al"
+    return_cmd_value = subprocess.call(cmd_msg, shell=True)
+    print(f"result: {return_cmd_value}")
+    # return_cmd_value = subprocess.check_output(cmd_msg)
+    # return {"message": return_cmd_value.decode("utf-8")}
+    return {"message": return_cmd_value}
+
+
+@router.post('/create-fine-tune')
+async def create_fine_tune(file: UploadFile):
+    UPLOAD_DIR = "./fine_tuning"
 
 
 app.include_router(router)
