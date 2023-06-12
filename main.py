@@ -1,3 +1,5 @@
+import os
+import uuid
 from fastapi import FastAPI, APIRouter, UploadFile
 import uvicorn
 import subprocess
@@ -43,6 +45,7 @@ async def create_paint(paint: CreatePaintDTO) -> PaintDTO:
 
 @router.get('/cmd')
 async def cmd():
+    # test python system call
     cmd_msg = "ls -al"
     return_cmd_value = subprocess.call(cmd_msg, shell=True)
     print(f"result: {return_cmd_value}")
@@ -54,6 +57,12 @@ async def cmd():
 @router.post('/create-fine-tune')
 async def create_fine_tune(file: UploadFile):
     UPLOAD_DIR = "./fine_tuning"
+    file_content = await file.read()
+    file_name = f"{file.filename}-{str(uuid.uuid4())}.txt"
+    with open(os.path.join(UPLOAD_DIR, file_name), "wb") as fp:
+        fp.write(file_content)  # 서버 로컬 스토리지에 이미지 저장 (쓰기)
+
+    return {"fileName": file_name}
 
 
 app.include_router(router)
