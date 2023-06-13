@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import subprocess
-from dto import PaintDTO, CreatePaintDTO, APIResponse, CreateFineTuneNameDTO, RequestChatByFineTuneDTO
+from dto import PaintDTO, CreatePaintDTO, APIResponse, RequestChatByFineTuneDTO
 from openai_func import translate_description, generate_image, upload_jsonl, get_file_list, create_fine_tune_model, \
     get_fine_tune_list, delete_fine_tune_model, chat_by_fine_tune_model
 from util import fine_tune_save_file, create_jsonl
@@ -22,6 +22,44 @@ async def root():
     except Exception as e:
         print(e)
         return {"success": False, "message": "Request has failed", "data": {}}
+
+
+@router.get('/list-file')
+async def list_file():
+    try:
+        get_file_list_result = get_file_list()
+        if not get_file_list_result["success"]:
+            print(get_file_list_result["message"])
+            raise Exception("fail to get file list")
+
+        return {
+            "success": True,
+            "message": "success to get file list",
+            "data": get_file_list_result["data"]
+        }
+
+    except Exception as e:
+        print(str(e))
+        return {"success": False, "message": "fail to get file list", "data": {}}
+
+
+@router.get('/list-fine-tune')
+async def list_fine_tune():
+    try:
+        get_fine_tune_list_result = get_fine_tune_list()
+        if not get_fine_tune_list_result["success"]:
+            print(get_fine_tune_list_result["message"])
+            raise Exception("fail to get fine tune list")
+
+        return {
+            "success": True,
+            "message": "success to get fine tune list",
+            "data": get_fine_tune_list_result["data"]
+        }
+
+    except Exception as e:
+        print(str(e))
+        return {"success": False, "message": "fail to get fine tune list", "data": {}}
 
 
 @router.post("/paint", response_model=PaintDTO)
@@ -49,17 +87,6 @@ async def create_paint(paint: CreatePaintDTO) -> PaintDTO:  # fastapi test
             "message": translate_description_result.message,
             "data": {}
         })
-
-
-@router.get('/cmd')
-async def cmd():
-    # test python system call
-    cmd_msg = "ls -al"
-    return_cmd_value = subprocess.call(cmd_msg, shell=True)
-    print(f"result: {return_cmd_value}")
-    # return_cmd_value = subprocess.check_output(cmd_msg)
-    # return {"message": return_cmd_value.decode("utf-8")}
-    return {"message": return_cmd_value}
 
 
 @router.post('/create-fine-tune', response_model=APIResponse[str])
@@ -103,42 +130,26 @@ async def create_fine_tune(file: UploadFile, modelName: str = Form(...)):
         return {"success": False, "message": "fail to create fine tune", "data": {}}
 
 
-@router.get('/list-file')
-async def list_file():
+@router.post('/chatbot-by-fine-tune')
+async def chatbot_by_fine_tune(body: RequestChatByFineTuneDTO):
     try:
-        get_file_list_result = get_file_list()
-        if not get_file_list_result["success"]:
-            print(get_file_list_result["message"])
-            raise Exception("fail to get file list")
+        chat_by_fine_tune_model_result = chat_by_fine_tune_model(body.fineTuneModel, body.prompt)
+        if not chat_by_fine_tune_model_result["success"]:
+            raise Exception(f"{chat_by_fine_tune_model_result['message']}")
 
         return {
             "success": True,
-            "message": "success to get file list",
-            "data": get_file_list_result["data"]
+            "message": "success to chat by fine tune",
+            "data": {
+                "fineTuneModel": body.fineTuneModel,
+                "prompt": body.prompt,
+                "botMessage": chat_by_fine_tune_model_result["data"]
+            }
         }
 
     except Exception as e:
-        print(str(e))
-        return {"success": False, "message": "fail to get file list", "data": {}}
-
-
-@router.get('/list-fine-tune')
-async def list_fine_tune():
-    try:
-        get_fine_tune_list_result = get_fine_tune_list()
-        if not get_fine_tune_list_result["success"]:
-            print(get_fine_tune_list_result["message"])
-            raise Exception("fail to get fine tune list")
-
-        return {
-            "success": True,
-            "message": "success to get fine tune list",
-            "data": get_fine_tune_list_result["data"]
-        }
-
-    except Exception as e:
-        print(str(e))
-        return {"success": False, "message": "fail to get fine tune list", "data": {}}
+        print(e)
+        return {"success": False, "message": f"fail to chat by fine tune: {e}", "data": {}}
 
 
 @router.delete('/delete-fine-tune')
@@ -160,26 +171,16 @@ async def delete_fine_tune(fineTuneModel: str = Form(...)):
         return {"success": False, "message": f"fail to delete fine tune: {e}", "data": {}}
 
 
-@router.post('/chatbot-by-fine-tune')
-async def chatbot_by_fine_tune(body: RequestChatByFineTuneDTO):
-    try:
-        chat_by_fine_tune_model_result = chat_by_fine_tune_model(body.fineTuneModel, body.prompt)
-        if not chat_by_fine_tune_model_result["success"]:
-            raise Exception(f"{chat_by_fine_tune_model_result['message']}")
-
-        return {
-            "success": True,
-            "message": "success to chat by fine tune",
-            "data": {
-                "fineTuneModel": body.fineTuneModel,
-                "prompt": body.prompt,
-                "botMessage": chat_by_fine_tune_model_result["data"]
-            }
-        }
-
-    except Exception as e:
-        print(e)
-        return {"success": False, "message": f"fail to chat by fine tune: {e}", "data": {}}
+# test
+@router.get('/cmd')
+async def cmd():
+    # test python system call
+    cmd_msg = "ls -al"
+    return_cmd_value = subprocess.call(cmd_msg, shell=True)
+    print(f"result: {return_cmd_value}")
+    # return_cmd_value = subprocess.check_output(cmd_msg)
+    # return {"message": return_cmd_value.decode("utf-8")}
+    return {"message": return_cmd_value}
 
 
 app.include_router(router)
