@@ -1,4 +1,13 @@
 from pydantic import BaseModel
+from typing import Generic, TypeVar, Optional
+
+T = TypeVar("T")
+
+
+class APIResponse(BaseModel, Generic[T]):
+    success: bool
+    message: Optional[str]
+    data: Optional[T]
 
 
 class ResponseImage(BaseModel):

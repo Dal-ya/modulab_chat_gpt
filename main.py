@@ -1,26 +1,30 @@
-import mimetypes
-import os
-import uuid
-from pathlib import Path
-
-from fastapi import FastAPI, APIRouter, UploadFile, HTTPException
+from fastapi import FastAPI, APIRouter, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import subprocess
-from dto import PaintDTO, CreatePaintDTO
+from dto import PaintDTO, CreatePaintDTO, APIResponse
 from openai_func import translate_description, generate_image
-from util import fine_tune_save_file
+from util import fine_tune_save_file, create_jsonl
 
 app = FastAPI()
+
+# CORS middleware 등록 (선택적)
+app.add_middleware(CORSMiddleware, allow_origins=["*"])
+
 router = APIRouter(prefix="/api")
 
 
-@router.get("/")
+@router.get("/", response_model=APIResponse[str])
 async def root():
-    return {"message": "Hello World"}
+    try:
+        return {"success": True, "message": "success get message", "data": "Hello World"}
+    except Exception as e:
+        print(e)
+        return {"success": False, "message": "Request has failed", "data": {}}
 
 
 @router.post("/paint", response_model=PaintDTO)
-async def create_paint(paint: CreatePaintDTO) -> PaintDTO:
+async def create_paint(paint: CreatePaintDTO) -> PaintDTO:  # fastapi test
     translate_description_result = translate_description(paint.description)
 
     if translate_description_result.success:
@@ -57,14 +61,35 @@ async def cmd():
     return {"message": return_cmd_value}
 
 
-@router.post('/create-fine-tune')
+@router.post('/create-fine-tune', response_model=APIResponse[str])
 async def create_fine_tune(file: UploadFile):
-    # 파일 확장자 확인
-    if not mimetypes.guess_type(file.filename)[0].startswith("text/"):
-        raise HTTPException(status_code=400, detail="올바른 텍스트 파일을 업로드 해야 합니다.")
+    try:
+        fine_tune_save_file_result = await fine_tune_save_file(file)
+        print(f"fine_tune_save_file_result: {fine_tune_save_file_result['data']}")
 
-    result = fine_tune_save_file(file)
-    return {"message": "success to create fine tune", "data": result}
+        if not fine_tune_save_file_result["success"]:
+            print(fine_tune_save_file_result["message"])
+            Exception("fail to save file")
+
+        file_name = fine_tune_save_file_result["data"]["fileName"]
+        file_path = fine_tune_save_file_result["data"]["filePath"]
+
+        create_jsonl_result = create_jsonl(file_name, file_path)
+        print(f"create_jsonl_result: {create_jsonl_result['data']}")
+
+        if not create_jsonl_result["success"]:
+            print(create_jsonl_result["message"])
+            Exception("fail to create jsonl")
+
+        return {
+            "success": True,
+            "message": "success to create fine tune",
+            "data": {}
+        }
+
+    except Exception as e:
+        print(e)
+        return {"success": False, "message": "fail to create fine tune", "data": {}}
 
 
 app.include_router(router)

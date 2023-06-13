@@ -26,3 +26,4 @@ archive.zip
 .*.sw?
 
 fine_tuning/
+jsonl_files/
