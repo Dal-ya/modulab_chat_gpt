@@ -1,11 +1,14 @@
+import mimetypes
 import os
 import uuid
-from fastapi import FastAPI, APIRouter, UploadFile
+from pathlib import Path
+
+from fastapi import FastAPI, APIRouter, UploadFile, HTTPException
 import uvicorn
 import subprocess
 from dto import PaintDTO, CreatePaintDTO
 from openai_func import translate_description, generate_image
-
+from util import fine_tune_save_file
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
@@ -56,13 +59,12 @@ async def cmd():
 
 @router.post('/create-fine-tune')
 async def create_fine_tune(file: UploadFile):
-    UPLOAD_DIR = "./fine_tuning"
-    file_content = await file.read()
-    file_name = f"{file.filename}-{str(uuid.uuid4())}.txt"
-    with open(os.path.join(UPLOAD_DIR, file_name), "wb") as fp:
-        fp.write(file_content)  # 서버 로컬 스토리지에 이미지 저장 (쓰기)
+    # 파일 확장자 확인
+    if not mimetypes.guess_type(file.filename)[0].startswith("text/"):
+        raise HTTPException(status_code=400, detail="올바른 텍스트 파일을 업로드 해야 합니다.")
 
-    return {"fileName": file_name}
+    result = fine_tune_save_file(file)
+    return {"message": "success to create fine tune", "data": result}
 
 
 app.include_router(router)

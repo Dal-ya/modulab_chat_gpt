@@ -24,3 +24,5 @@ archive.zip
 # vim temporary files
 *~
 .*.sw?
+
+fine_tuning/
