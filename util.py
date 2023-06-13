@@ -100,7 +100,7 @@ def create_jsonl(file_name: str, file_path: str, CHUNK_SIZE=500):
         JSONL_DIR.mkdir(exist_ok=True)
 
         file_name_without_ext, _ = os.path.splitext(file_name)
-        jsonl_file_name = f"{file_name}-{str(uuid.uuid4())}.jsonl"
+        jsonl_file_name = f"{file_name_without_ext}-{str(uuid.uuid4())}.jsonl"
 
         with open(os.path.join(JSONL_DIR, jsonl_file_name), "w") as output_file:
             for chunk in chunks:
@@ -111,7 +111,10 @@ def create_jsonl(file_name: str, file_path: str, CHUNK_SIZE=500):
                 # Write response directly to output.jsonl
                 output_file.write(response + "\n")
 
-        return {"success": True, "message": "success to create jsonl file", "data": {}}
+        return {"success": True, "message": "success to create jsonl file", "data": {
+            "fileName": jsonl_file_name,
+            "filePath": os.path.join(JSONL_DIR, jsonl_file_name)
+        }}
     except Exception as e:
         print(f"Error: {str(e)}")
         return {"success": False, "message": "fail to create jsonl file", "data": {}}

@@ -72,3 +72,82 @@ def generate_image(prompt: str) -> ResponseResult[list[ResponseImage] | dict]:
             "message": f"Request has failed. Error: {e.code}",
             "data": {}
         })
+
+
+def upload_jsonl(file_path: str, purpose="fine-tune"):
+    try:
+        with open(file_path, "rb") as f:
+            print("file_path: ", file_path)
+            response = openai.File.create(file=f, purpose=purpose)
+            print("response: ", response)
+            print("response type", type(response))
+            return {
+                "success": True,
+                "message": "success to upload jsonl",
+                "data": {"fileId": response["id"]}
+            }
+    except openai.error.APIError as e:
+        print(e)
+        return {
+            "success": False,
+            "message": "fail upload jsonl",
+            "data": {}
+        }
+
+
+def get_file_list():
+    try:
+        response = openai.File.list()
+        return {
+            "success": True,
+            "message": "success to get file list",
+            "data": response["data"]
+        }
+    except openai.error.APIError as e:
+        print(e)
+        return {
+            "success": False,
+            "message": "fail to get file list",
+            "data": {}
+        }
+
+
+def create_fine_tune_model(openai_file_id: str, model_name="test-fine-tune"):
+    try:
+        response = openai.FineTune.create(
+            training_file=openai_file_id,
+            model="curie",  # "ada", "babbage", "curie(default)", "davinci"
+            suffix=model_name
+            # n_epochs=1, # default: 4
+            # batch_size=1, # default: null
+        )
+        return {
+            "success": True,
+            "message": "success to create fine tune",
+            "data": response["id"]  # "ft-AF1WoRqd3aJAHsqc9NY7iL8F"
+        }
+
+    except openai.error.APIError as e:
+        print(e)
+        return {
+            "success": False,
+            "message": "fail to create fine tune",
+            "data": {}
+        }
+
+
+def get_fine_tune_list():
+    try:
+        response = openai.FineTune.list()
+        return {
+            "success": True,
+            "message": "success to get fine tune list",
+            "data": response["data"]
+        }
+    except openai.error.APIError as e:
+        print(e)
+        return {
+            "success": False,
+            "message": "fail to get fine tune list",
+            "data": {}
+        }

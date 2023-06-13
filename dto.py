@@ -23,3 +23,7 @@ class PaintDTO(BaseModel):
 class CreatePaintDTO(BaseModel):
     author: str
     description: str
+
+
+class CreateFineTuneNameDTO(BaseModel):
+    name: str
