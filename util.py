@@ -106,7 +106,7 @@ def create_jsonl(file_name: str, file_path: str, CHUNK_SIZE=500):
             for chunk in chunks:
                 response: str = get_gpt3_responses(chunk)
                 if response is None:
-                    Exception("The get_gpt3_responses has failed")
+                    raise Exception("The get_gpt3_responses has failed")
 
                 # Write response directly to output.jsonl
                 output_file.write(response + "\n")

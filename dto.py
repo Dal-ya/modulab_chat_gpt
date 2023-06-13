@@ -27,3 +27,8 @@ class CreatePaintDTO(BaseModel):
 
 class CreateFineTuneNameDTO(BaseModel):
     name: str
+
+
+class RequestChatByFineTuneDTO(BaseModel):
+    fineTuneModel: str
+    prompt: str

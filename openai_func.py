@@ -151,3 +151,44 @@ def get_fine_tune_list():
             "message": "fail to get fine tune list",
             "data": {}
         }
+
+
+def delete_fine_tune_model(fine_tune_model: str):
+    try:
+        response = openai.Model.delete(fine_tune_model)
+        return {
+            "success": True,
+            "message": "success to delete fine tune",
+            "data": response
+        }
+    except openai.error.APIError as e:
+        print(e)
+        return {
+            "success": False,
+            "message": "fail to delete fine tune",
+            "data": {}
+        }
+
+
+def chat_by_fine_tune_model(fine_tune_model: str, prompt: str):
+    try:
+        response = openai.Completion.create(
+            engine=fine_tune_model,  # Fine-tuned model
+            prompt=prompt,
+            temperature=0.8,
+            max_tokens=200
+        )
+
+        return {
+            "success": True,
+            "message": "success to chat by fine tune",
+            "data": response["choices"][0]["text"]
+        }
+
+    except openai.error.APIError as e:
+        print(e)
+        return {
+            "success": False,
+            "message": f"fail to chat by fine tune: {e}",
+            "data": {}
+        }
